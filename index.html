@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ប្រព័ន្ធព្រឹត្តិបត្រពិន្ទុ</title>
+<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Moul&family=Noto+Sans+Khmer:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>ប្រព័ន្ធព្រឹត្តិបត្រពិន្ទុ</h1>
+  <span id="status">រក្សាទុកក្នុង Local Storage</span>
+</header>
+<nav id="nav">
+  <button data-p="set" class="on">១. ការកំណត់</button>
+  <button data-p="stu">២. សិស្ស</button>
+  <button data-p="s1">៣. ពិន្ទុឆមាសទី១</button>
+  <button data-p="s2">៤. ពិន្ទុឆមាសទី២</button>
+  <button data-p="y">៥. ពិន្ទុប្រចាំឆ្នាំ</button>
+  <button data-p="sk">៦. ពិន្ទុបំណិន</button>
+  <button data-p="card">៧. ព្រឹត្តិបត្រ</button>
+  <button data-p="sync">៨. Google Sheet</button>
+</nav>
+<main>
+
+<section class="panel on" id="p-set">
+  <div class="box"><h3>ព័ត៌មានសាលា និងថ្នាក់</h3><div class="grid" id="setForm"></div></div>
+  <div class="box"><h3>ការគណនា</h3><div class="grid" id="calcForm"></div>
+    <p class="hint">និទ្ទេសគិតជាភាគរយនៃមធ្យមភាគពេញ ៖ A ≥ ៩០%, B ≥ ៨០%, C ≥ ៧០%, D ≥ ៦០%, E ≥ ៥០%, F &lt; ៥០%។ ពិន្ទុវិជ្ជាសម្បទា = មធ្យមភាគប្រចាំឆ្នាំ × (ភាគរយ ÷ ១០០)។</p></div>
+  <div class="box"><h3>មុខវិជ្ជា</h3>
+    <table class="t" id="subjTable"></table>
+    <div class="row"><button class="b g" id="addSubj">+ បន្ថែមមុខវិជ្ជា</button></div>
+    <p class="hint">ពិន្ទុសរុប = Σ (ពិន្ទុ × មេគុណ) · មធ្យមភាគ = ពិន្ទុសរុប ÷ Σមេគុណ។ បើ «ពិន្ទុពេញ» ខុសពី «មធ្យមភាគពេញ» ពិន្ទុនឹងត្រូវបំប្លែងតាមសមាមាត្រ។</p>
+  </div>
+  <div class="box"><h3>ទិន្នន័យ</h3><div class="row">
+    <button class="b g" id="expJson">បម្រុងទុក (JSON)</button>
+    <button class="b g" id="impJsonBtn">ស្តារពី JSON</button><input type="file" id="impJson" accept=".json" hidden>
+    <button class="b r" id="resetAll">លុបទិន្នន័យទាំងអស់</button>
+  </div></div>
+</section>
+
+<section class="panel" id="p-stu">
+  <div class="box">
+    <h3>បញ្ជីសិស្ស (<span id="cnt">0</span>)</h3>
+    <div class="row">
+      <button class="b" id="addStu">+ បន្ថែមសិស្ស</button>
+      <button class="b g" id="tplStu">⬇ គំរូ Excel</button>
+      <button class="b ok" id="impStuBtn">⬆ នាំចូលពី Excel</button><input type="file" id="f-stu" accept=".xlsx,.xls,.csv" hidden>
+      <button class="b g" id="expStu">នាំចេញ Excel</button>
+    </div>
+    <p class="hint">ក្បាលជួរ Excel ៖ <b>អត្តលេខ · ឈ្មោះ · ភេទ · ថ្ងៃខែឆ្នាំកំណើត</b> (បើអត្តលេខដូចគ្នា នឹងធ្វើបច្ចុប្បន្នភាព)។</p>
+    <div class="scroll"><table class="t" id="stuTable"></table></div>
+  </div>
+</section>
+
+<section class="panel" id="p-s1">
+  <div class="box">
+    <h3>ពិន្ទុប្រឡងឆមាសទី១</h3>
+    <div class="row">
+      <button class="b g" data-tpl="1">⬇ គំរូ Excel</button>
+      <button class="b ok" data-imp="1">⬆ នាំចូលពិន្ទុពី Excel</button><input type="file" id="f-s1" accept=".xlsx,.xls,.csv" hidden>
+      <button class="b g" data-exp="1">នាំចេញ Excel</button>
+    </div>
+    <div class="scroll tall"><table class="t sc" id="tbl1"></table></div>
+  </div>
+</section>
+
+<section class="panel" id="p-s2">
+  <div class="box">
+    <h3>ពិន្ទុប្រឡងឆមាសទី២</h3>
+    <div class="row">
+      <button class="b g" data-tpl="2">⬇ គំរូ Excel</button>
+      <button class="b ok" data-imp="2">⬆ នាំចូលពិន្ទុពី Excel</button><input type="file" id="f-s2" accept=".xlsx,.xls,.csv" hidden>
+      <button class="b g" data-exp="2">នាំចេញ Excel</button>
+    </div>
+    <div class="scroll tall"><table class="t sc" id="tbl2"></table></div>
+  </div>
+</section>
+
+<section class="panel" id="p-y">
+  <div class="box">
+    <h3>ពិន្ទុប្រចាំឆ្នាំ <small class="hint">(ឆមាសទី១ + ឆមាសទី២) ÷ ២ — គណនាស្វ័យប្រវត្តិ</small></h3>
+    <div class="row"><button class="b g" data-exp="y">នាំចេញ Excel</button></div>
+    <p class="hint">បើមានពិន្ទុតែឆមាសមួយ ប្រព័ន្ធយកតម្លៃឆមាសនោះជាប្រចាំឆ្នាំបណ្តោះអាសន្ន។</p>
+    <div class="scroll tall"><table class="t sc" id="tblY"></table></div>
+  </div>
+</section>
+
+<section class="panel" id="p-sk">
+  <div class="box">
+    <h3>ពិន្ទុបំណិន</h3>
+    <div class="row">
+      <button class="b g" id="tplSk">⬇ គំរូ Excel</button>
+      <button class="b ok" id="impSkBtn">⬆ នាំចូលពី Excel</button><input type="file" id="f-sk" accept=".xlsx,.xls,.csv" hidden>
+      <button class="b g" id="expSk">នាំចេញ Excel</button>
+    </div>
+    <div class="scroll tall"><table class="t" id="tblK"></table></div>
+  </div>
+</section>
+
+<section class="panel" id="p-card">
+  <div class="box noprint">
+    <div class="row">
+      <div style="min-width:260px"><label>ជ្រើសរើសសិស្ស</label><select id="cardSel"></select></div>
+      <button class="b" id="btnPrint">🖨 ព្រីន (សិស្សនេះ)</button>
+      <button class="b" id="btnPrintAll">🖨 ព្រីនទាំងថ្នាក់</button>
+      <button class="b ok" id="btnPdf">PDF (សិស្សនេះ)</button>
+      <button class="b ok" id="btnPdfAll">PDF (ទាំងថ្នាក់)</button>
+    </div>
+  </div>
+  <div class="printbox" id="cardwrap"><div id="cards"></div></div>
+</section>
+
+<section class="panel" id="p-sync">
+  <div class="box"><h3>ជំហានភ្ជាប់ជាមួយ Google Sheet</h3>
+    <ol class="hint">
+      <li>បើក Google Sheet របស់អ្នក → <b>Extensions → Apps Script</b>។</li>
+      <li>ចុច <b>ចម្លងកូដ</b> ខាងក្រោម បិទភ្ជាប់ជំនួសកូដចាស់ → Save។</li>
+      <li>ជ្រើស function <b>setup</b> → Run (អនុញ្ញាតសិទ្ធិ) ដើម្បីបង្កើត Sheet ដែលត្រូវប្រើដោយស្វ័យប្រវត្តិ។</li>
+      <li><b>Deploy → New deployment → Web app</b> ៖ Execute as <i>Me</i> · Who has access <i>Anyone</i> → ចម្លង URL (ចុងបញ្ចប់ <code>/exec</code>)។</li>
+      <li>បិទភ្ជាប់ URL ខាងក្រោម រួចចុចផ្ញើ ឬទាញយក។</li>
+    </ol>
+    <div class="row"><button class="b" id="copyGs">📋 ចម្លងកូដ Apps Script</button><span class="hint" id="copyMsg"></span></div>
+    <textarea id="gsView" readonly></textarea>
+  </div>
+  <div class="box"><h3>ភ្ជាប់</h3>
+    <label>Web App URL</label><input id="api" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="row">
+      <button class="b ok" id="pushG">⬆ ផ្ញើទៅ Google Sheet</button>
+      <button class="b g" id="pullG">⬇ ទាញយកពី Google Sheet</button>
+      <label class="inl"><input type="checkbox" id="auto"> ផ្ញើស្វ័យប្រវត្តិពេលកែប្រែ</label>
+    </div>
+    <p class="hint">Sheet ដែលត្រូវបានបង្កើត ៖ <b>App_ការកំណត់</b>, <b>App_មុខវិជ្ជា</b>, <b>App_សិស្ស</b>, <b>App_ពិន្ទុ</b> (មិនបង្កើតសន្លឹកព្រឹត្តិបត្រ ហើយមិនប៉ះសន្លឹកដើម)។ បើកែកូដ Apps Script ត្រូវ Deploy ជាកំណែថ្មី។</p>
+  </div>
+</section>
+</main>
+<div id="toast"></div>
+<div id="stage"></div>
+<script src="gs-code.js"></script>
+<script src="calc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
