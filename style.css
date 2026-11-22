@@ -60,6 +60,7 @@ th.sk{z-index:4;background:#eef2fb}
 .card .b{font-weight:700}
 .card .red{color:#d0121b}
 .card .blue{color:#1f5fbf;font-weight:700}
+.card .blue.nm{font-family:'Khmer OS Muol','Khmer OS Muol Light','Moul',serif;font-weight:400;font-size:12.5px}
 .card .sign{display:flex;justify-content:space-between;margin-top:10px;text-align:center;line-height:1.7}
 .card .sign>div{width:48%}
 .card .sp{height:30px}

@@ -26,3 +26,6 @@ Open the app → tab **៨. Google Sheet** and follow the steps (copy the Apps S
 - វិជ្ជាសម្បទា = yearly average × `skillPct`/100; total = វិជ្ជាសម្បទា + បំណិន + ចរិយា.
 - Level (grade 7–12) sets each subject's full score from the school table; coefficient = full score ÷ `M` (editable). Subjects with no score for that level are removed.
 - Grade by percentage of `M`; style selectable in Settings: words (ល្អ ≥ 80, ល្អបង្គួរ ≥ 65, មធ្យម ≥ 50, ខ្សោយ) or letters (A ≥ 90 … F < 50). Thresholds are editable.
+
+## Dates
+Enter the date as `dd/mm/yyyy` in Settings. Solar date (សុរិយគតិ) is built in; lunar date (ចន្ទគតិ) uses [momentkh](https://github.com/ThyrithSor/momentkh) (MIT) loaded from jsDelivr, so it needs internet. Student names on the card use the *Khmer OS Muol* font if installed (fallback: Google font *Moul*).

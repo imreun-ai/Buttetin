@@ -5,7 +5,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const f2 = v => v == null ? '' : (Math.round(v * 100) / 100).toFixed(2);
 
-const FIELDS = [['office', 'ឈ្មោះការិយាល័យ'], ['province', 'ខេត្ត'], ['school', 'ឈ្មោះសាលា'], ['cls', 'ថ្នាក់'], ['year', 'ឆ្នាំសិក្សា'], ['date', 'កាលបរិច្ឆេទ'], ['lunar', 'ថ្ងៃ ខែ ឆ្នាំ ចន្ទគតិ'], ['signDate', 'ទីកន្លែង និងកាលបរិច្ឆេទចុះហត្ថលេខា'], ['teacher', 'ឈ្មោះគ្រូបន្ទុក'], ['principal', 'ឈ្មោះនាយកសាលា']];
+const FIELDS = [['office', 'ឈ្មោះការិយាល័យ'], ['province', 'ខេត្ត'], ['school', 'ឈ្មោះសាលា'], ['cls', 'ថ្នាក់'], ['year', 'ឆ្នាំសិក្សា'], ['date', 'កាលបរិច្ឆេទ ថ្ងៃ/ខែ/ឆ្នាំ (ឧ. 21/11/2026) → បង្ហាញចន្ទគតិ និងសុរិយគតិស្វ័យប្រវត្តិ'], ['place', 'ទីកន្លែងចុះហត្ថលេខា (ឧ. កណ្តៀង)'], ['lunar', 'ចន្ទគតិ (ស្វ័យប្រវត្តិ · កែដោយដៃបាន)'], ['signDate', 'ទីកន្លែង និងសុរិយគតិ (ស្វ័យប្រវត្តិ · កែដោយដៃបាន)'], ['teacher', 'ឈ្មោះគ្រូបន្ទុក'], ['principal', 'ឈ្មោះនាយកសាលា']];
 const CALC = [['M', 'មធ្យមភាគពេញ (ឧ. ៥០)'], ['skillPct', 'វិជ្ជាសម្បទា = ម.ប្រចាំឆ្នាំ × ...%'], ['skillMax', 'ពិន្ទុបំណិនសម្បទា (ពេញ)'], ['charMax', 'ពិន្ទុចរិយាសម្បទា (ពេញ)']];
 
 const TBL_SUBJ = ['ភាសាខ្មែរ', 'គណិតវិទ្យា', 'រូបវិទ្យា', 'គីមីវិទ្យា', 'ជីវវិទ្យា', 'ប្រវត្តិវិទ្យា', 'ព័ត៌មានវិទ្យា', 'សីលធម៌', 'ផែនដីវិទ្យា', 'ភូមិវិទ្យា', 'គេហវិទ្យា', 'អប់រំកាយ', 'ភាសាចិន/បំណិន', 'សេដ្ឋកិច្ច', 'សិល្បៈ', 'កសិកម្ម', 'អង់គ្លេស'];
@@ -37,9 +37,34 @@ function applyLevel(lv) {
   st.subjects = next.concat(custom);
   st.settings.level = lv; save(); return true;
 }
+const KH_MONTHS = ['មករា', 'កុម្ភៈ', 'មិនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+const toKh = s => String(s).replace(/\d/g, d => KD[d]);
+const toLat = s => String(s).replace(/[០-៩]/g, d => KD.indexOf(d));
+const dobKh = s => toKh(String(s == null ? '' : s).trim().replace(/[\/.\-]+/g, ' ').replace(/\s+/g, ' '));
+function parseDMY(str) {
+  const m = toLat(str || '').trim().match(/^(\d{1,2})\s*[\/.\-\s]\s*(\d{1,2})\s*[\/.\-\s]\s*(\d{4})$/);
+  if (!m) return null;
+  const d = +m[1], mo = +m[2], y = +m[3], dt = new Date(y, mo - 1, d, 12);
+  return (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d) ? { d, mo, y, dt } : null;
+}
+/* សុរិយគតិ (គណនាខ្លួនឯង) + ចន្ទគតិ (ប្រើបណ្ណាល័យ momentkh) */
+function khDates(str) {
+  const p = parseDMY(str); if (!p) return null;
+  const solar = 'ថ្ងៃទី' + toKh(p.d) + ' ខែ' + KH_MONTHS[p.mo - 1] + ' ឆ្នាំ' + toKh(p.y);
+  let lunar = '';
+  try { const MK = window.momentkh; if (MK && MK.fromDate) lunar = MK.format(MK.fromDate(p.dt), 'ថ្ងៃW dN ខែm ឆ្នាំa e ព.ស.b'); } catch (e) {}
+  return { solar, lunar };
+}
+function autoDates() {
+  const r = khDates(st.settings.date); if (!r) return false;
+  if (r.lunar) st.settings.lunar = r.lunar;
+  st.settings.signDate = ((st.settings.place || '').trim() + ' ' + r.solar).trim();
+  ['lunar', 'signDate'].forEach(k => { const el = document.querySelector('#setForm [data-k="' + k + '"]'); if (el) el.value = st.settings[k] || ''; });
+  return !!r.lunar;
+}
 function defaults() {
   return {
-    settings: { office: 'ការិយាល័យ អប់រំ យុវជន និង កីឡា ស្រុកកណ្តៀង', province: 'ពោធិ៍សាត់', school: 'វិទ្យាល័យ ហ៊ុន សែន កណ្តៀង', cls: '១២ A', year: '២០២៦-២០២៧', date: '12/11/2026', lunar: 'ថ្ងៃសុក្រ ៨កើត ខែមិគសិរ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស.២៥៦៩', signDate: 'កណ្តៀង ថ្ងៃទី២៨ ខែវិច្ឆិកា ឆ្នាំ២០២៥', teacher: 'អុឹម រើន', principal: '', M: 50, skillPct: 80, skillMax: 5, charMax: 5, level: '12 វិទ្យាសាស្ត្រ', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] },
+    settings: { office: 'ការិយាល័យ អប់រំ យុវជន និង កីឡា ស្រុកកណ្តៀង', province: 'ពោធិ៍សាត់', school: 'វិទ្យាល័យ ហ៊ុន សែន កណ្តៀង', cls: '១២ A', year: '២០២៦-២០២៧', date: '21/11/2026', place: 'កណ្តៀង', lunar: '', signDate: '', teacher: 'អុឹម រើន', principal: '', M: 50, skillPct: 80, skillMax: 5, charMax: 5, level: '12 វិទ្យាសាស្ត្រ', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] },
     subjects: subjectsForLevel('12 វិទ្យាសាស្ត្រ').map(([name, max]) => ({ id: uid(), name, max, coef: coefOf(max, 50) })),
     students: []
   };
@@ -93,7 +118,9 @@ function bindSettings() {
     const t = e.target;
     if (t.id === 'khDigits') { ui.kh = t.checked; save(); return; }
     const k = t.dataset.k; if (!k) return;
-    st.settings[k] = t.type === 'number' ? (t.value === '' ? '' : Number(t.value)) : t.value; save();
+    st.settings[k] = t.type === 'number' ? (t.value === '' ? '' : Number(t.value)) : t.value;
+    if (k === 'date' || k === 'place') { const ok = autoDates(); if (k === 'date' && parseDMY(t.value) && !ok) toast('មិនទាន់ទាញចន្ទគតិបាន (ត្រូវការអ៊ីនធឺណិតដើម្បីផ្ទុកបណ្ណាល័យ)'); }
+    save();
   };
   $('#setForm').addEventListener('input', onSet);
   $('#calcForm').addEventListener('input', onSet);
@@ -428,8 +455,8 @@ function cardHTML(s) {
   <div class="hl moul">${esc(S.province)}<br>${esc(S.school)}</div>
   <h2 class="red">ព្រឹត្តិបត្រពិន្ទុប្រចាំឆ្នាំសិក្សា ${esc(kd(S.year))}</h2>
   <table class="ib"><colgroup><col style="width:21%"><col style="width:3%"><col style="width:30%"><col style="width:14%"><col style="width:3%"><col></colgroup>
-    <tr><td>របស់សិស្សឈ្មោះ</td><td>:</td><td class="blue">${esc(s.name)}</td><td>ភេទ</td><td>:</td><td class="blue">${esc(s.sex)}</td></tr>
-    <tr><td>ថ្ងៃខែឆ្នាំកំណើត</td><td>:</td><td class="blue" style="font-weight:400">${esc(s.dob)}</td><td>ថ្នាក់ទី</td><td>:</td><td class="blue">${esc(kd(S.cls))}</td></tr></table>
+    <tr><td>របស់សិស្សឈ្មោះ</td><td>:</td><td class="blue nm">${esc(s.name)}</td><td>ភេទ</td><td>:</td><td class="blue">${esc(s.sex)}</td></tr>
+    <tr><td>ថ្ងៃខែឆ្នាំកំណើត</td><td>:</td><td class="blue" style="font-weight:400">${esc(dobKh(s.dob))}</td><td>ថ្នាក់ទី</td><td>:</td><td class="blue">${esc(kd(S.cls))}</td></tr></table>
   <table class="main"><colgroup><col style="width:150px">${'<col style="width:54px"><col style="width:54px">'.repeat(3)}<col></colgroup>
   <tr><th rowspan="2">មុខវិជ្ជា</th><th colspan="2">ឆមាសទី១</th><th colspan="2">ឆមាសទី២</th><th colspan="2">ប្រចាំឆ្នាំ</th><th rowspan="2" style="font-size:11.5px">មូលវិចារ ហត្ថលេខា<br>និងឈ្មោះគ្រូមុខវិជ្ជា</th></tr>
   <tr>${'<th>ពិន្ទុ</th><th class="red">ចំ.ថ្នាក់</th>'.repeat(3)}</tr>
@@ -560,6 +587,7 @@ function showTab(p) {
 function renderAll() { showTab(ui.tab || 'set'); }
 
 load();
+if (!st.settings.dateAutoV2) { if (!st.settings.place) st.settings.place = 'កណ្តៀង'; if (parseDMY(st.settings.date)) autoDates(); st.settings.dateAutoV2 = 1; save(); }
 bindSettings(); bindStudents(); bindSem(1); bindSem(2); bindScoreButtons(); bindSkill(); bindCards(); bindSync();
 $('#nav').addEventListener('click', e => { if (e.target.dataset.p) showTab(e.target.dataset.p); });
 renderAll();
