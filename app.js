@@ -455,8 +455,8 @@ function cardHTML(s) {
   <div class="hl moul">${esc(S.province)}<br>${esc(S.school)}</div>
   <h2 class="red">ព្រឹត្តិបត្រពិន្ទុប្រចាំឆ្នាំសិក្សា ${esc(kd(S.year))}</h2>
   <table class="ib"><colgroup><col style="width:21%"><col style="width:3%"><col style="width:30%"><col style="width:14%"><col style="width:3%"><col></colgroup>
-    <tr><td>របស់សិស្សឈ្មោះ</td><td>:</td><td class="blue nm">${esc(s.name)}</td><td>ភេទ</td><td>:</td><td class="blue">${esc(s.sex)}</td></tr>
-    <tr><td>ថ្ងៃខែឆ្នាំកំណើត</td><td>:</td><td class="blue" style="font-weight:400">${esc(dobKh(s.dob))}</td><td>ថ្នាក់ទី</td><td>:</td><td class="blue">${esc(kd(S.cls))}</td></tr></table>
+    <tr><td>របស់សិស្សឈ្មោះ</td><td>:</td><td class="blue nm ctr">${esc(s.name)}</td><td>ភេទ</td><td>:</td><td class="blue">${esc(s.sex)}</td></tr>
+    <tr><td>ថ្ងៃខែឆ្នាំកំណើត</td><td>:</td><td class="blue ctr" style="font-weight:400">${esc(dobKh(s.dob))}</td><td>ថ្នាក់ទី</td><td>:</td><td class="blue">${esc(kd(S.cls))}</td></tr></table>
   <table class="main"><colgroup><col style="width:150px">${'<col style="width:54px"><col style="width:54px">'.repeat(3)}<col></colgroup>
   <tr><th rowspan="2">មុខវិជ្ជា</th><th colspan="2">ឆមាសទី១</th><th colspan="2">ឆមាសទី២</th><th colspan="2">ប្រចាំឆ្នាំ</th><th rowspan="2" style="font-size:11.5px">មូលវិចារ ហត្ថលេខា<br>និងឈ្មោះគ្រូមុខវិជ្ជា</th></tr>
   <tr>${'<th>ពិន្ទុ</th><th class="red">ចំ.ថ្នាក់</th>'.repeat(3)}</tr>
