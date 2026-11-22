@@ -8,6 +8,7 @@ Static web app (HTML/CSS/JS, no build step). Data is stored in the browser's Loc
 | `index.html`, `style.css` | UI (8 tabs) and report card print layout |
 | `app.js` | UI logic, Excel import/export, PDF, Google sync |
 | `calc.js` | Score calculation (totals, averages, ranks, grades) |
+| `manifest.json`, `sw.js`, `icons/` | Installable app (home-screen icon, offline fallback) |
 | `Code.gs` | Google Apps Script (source of truth) |
 | `gs-code.js` | `Code.gs` embedded for the "copy code" button — regenerate with `node build-gs.js` after editing `Code.gs` |
 
