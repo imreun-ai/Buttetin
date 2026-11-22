@@ -39,8 +39,10 @@ function semCalc(st, k) {
       if (isNum(raw)) {
         const n = Number(raw) / (Number(j.max) || M) * M;
         sub[j.id] = { raw: Number(raw), n };
-        tot += n * (Number(j.coef) || 0);
-        cf += Number(j.coef) || 0;
+        if (j.count !== false) {   // មុខវិជ្ជាដែលដោះធិកចេញ មិនគិតក្នុងពិន្ទុសរុប/មធ្យមភាគ
+          tot += n * (Number(j.coef) || 0);
+          cf += Number(j.coef) || 0;
+        }
       } else sub[j.id] = null;
     });
     const avg = cf ? tot / cf : null;

@@ -5,7 +5,7 @@
 var SPREADSHEET_ID = '1A7HNCPOa3s1r75X0ycEF8OatRDC3cyWnBIGYHwxWFew';
 var TABLES = {
   settings: { name: 'App_ការកំណត់', head: ['key', 'value'] },
-  subjects: { name: 'App_មុខវិជ្ជា', head: ['id', 'name', 'coef', 'max'] },
+  subjects: { name: 'App_មុខវិជ្ជា', head: ['id', 'name', 'coef', 'max', 'count'] },
   students: { name: 'App_សិស្ស', head: ['id', 'sid', 'name', 'sex', 'dob', 'a1p', 'a1u', 'a2p', 'a2u', 'm1', 'm2', 'skill', 'char', 'cond'] },
   scores:   { name: 'App_ពិន្ទុ', head: ['studentId', 'subjectId', 's1', 's2'] }
 };
@@ -18,7 +18,9 @@ function getSS_() {
 function ensure_(key) {
   var ss = getSS_(), t = TABLES[key];
   var sh = ss.getSheetByName(t.name);
-  if (!sh) {
+  if (sh) {
+    sh.getRange(1, 1, 1, t.head.length).setValues([t.head]);   // keep header in sync with newer versions
+  } else {
     sh = ss.insertSheet(t.name);
     sh.getRange(1, 1, 1, t.head.length).setValues([t.head]).setFontWeight('bold').setBackground('#e8eefc');
     sh.setFrozenRows(1);
@@ -64,7 +66,7 @@ function doPost(e) {
     if (body.action !== 'save') return json_({ ok: false, error: 'unknown action' });
     var d = body.data;
     write_('settings', Object.keys(d.settings || {}).map(function (k) { return [k, d.settings[k]]; }));
-    write_('subjects', (d.subjects || []).map(function (s) { return [s.id, s.name, s.coef, s.max]; }));
+    write_('subjects', (d.subjects || []).map(function (s) { return [s.id, s.name, s.coef, s.max, s.count === false ? 0 : 1]; }));
     write_('students', (d.students || []).map(function (s) {
       return [s.id, s.sid, s.name, s.sex, s.dob, s.a1p, s.a1u, s.a2p, s.a2u, s.m1, s.m2, s.skill, s.char, JSON.stringify(s.cond || {})];
     }));
@@ -92,7 +94,7 @@ function doGet(e) {
     var settings = {};
     read_('settings').forEach(function (r) { settings[r[0]] = r[1]; });
     var subjects = read_('subjects').map(function (r) {
-      return { id: String(r[0]), name: r[1], coef: Number(r[2]) || 1, max: Number(r[3]) || 100 };
+      return { id: String(r[0]), name: r[1], coef: Number(r[2]) || 1, max: Number(r[3]) || 100, count: String(r[4]) !== '0' };
     });
     var students = read_('students').map(function (r) {
       var cond = {};

@@ -31,7 +31,7 @@ function applyLevel(lv) {
   const hasScore = removed.some(j => st.students.some(s => (s.s1 || {})[j.id] !== undefined || (s.s2 || {})[j.id] !== undefined));
   if (hasScore && !confirm('មុខវិជ្ជាខ្លះ (' + removed.map(j => j.name).join(', ') + ') មិនមានក្នុងកម្រិតនេះ ហើយមានពិន្ទុរួចហើយ។ ពិន្ទុទាំងនោះនឹងត្រូវលុប។ បន្ត?')) return false;
   const byName = {}; st.subjects.forEach(j => { byName[canon(j.name)] = j; });
-  const next = list.map(([name, max]) => { const o = byName[name]; return { id: o ? o.id : uid(), name, max, coef: coefOf(max, M) }; });
+  const next = list.map(([name, max]) => { const o = byName[name]; return { id: o ? o.id : uid(), name, max, coef: coefOf(max, M), count: o ? o.count !== false : true }; });
   const custom = st.subjects.filter(j => !TBL_SUBJ.includes(canon(j.name)));
   removed.forEach(j => st.students.forEach(s => { delete (s.s1 || {})[j.id]; delete (s.s2 || {})[j.id]; }));
   st.subjects = next.concat(custom);
@@ -110,8 +110,8 @@ function renderSettings() {
     `<div><label>ល្អ · ល្អបង្គួរ · មធ្យម (% ទាបបំផុត)</label><input data-g="gradeW" value="${(st.settings.gradeW || [80, 65, 50]).join(', ')}"></div>` +
     `<div><label>A · B · C · D · E (% ទាបបំផុត)</label><input data-g="gradeL" value="${(st.settings.gradeL || [90, 80, 70, 60, 50]).join(', ')}"></div>`;
   $('#levelSel').innerHTML = '<option value="">— ជ្រើសរើសកម្រិតថ្នាក់ —</option>' + Object.keys(LEVEL_MAX).map(l => `<option value="${l}" ${st.settings.level === l ? 'selected' : ''}>ថ្នាក់ទី ${l}</option>`).join('');
-  $('#subjTable').innerHTML = '<tr><th>#</th><th>មុខវិជ្ជា</th><th>មេគុណ</th><th>ពិន្ទុពេញ</th><th></th></tr>' +
-    st.subjects.map((j, i) => `<tr><td>${i + 1}</td><td><input data-j="${j.id}" data-f="name" value="${esc(j.name)}" style="text-align:left"></td><td><input type="number" step="0.5" data-j="${j.id}" data-f="coef" value="${j.coef}"></td><td><input type="number" data-j="${j.id}" data-f="max" value="${j.max}"></td><td><button class="b r" data-del="${j.id}">✕</button></td></tr>`).join('');
+  $('#subjTable').innerHTML = '<tr><th>#</th><th>មុខវិជ្ជា</th><th title="ដោះធិកចេញ បើមុខវិជ្ជាមិនគិតក្នុងពិន្ទុសរុប/មធ្យមភាគ">គិតមេគុណ</th><th>មេគុណ</th><th>ពិន្ទុពេញ</th><th></th></tr>' +
+    st.subjects.map((j, i) => `<tr${j.count === false ? ' style="background:#f6f7fb;color:#8a93a8"' : ''}><td>${i + 1}</td><td><input data-j="${j.id}" data-f="name" value="${esc(j.name)}" style="text-align:left"></td><td><input type="checkbox" data-j="${j.id}" data-f="count" ${j.count === false ? '' : 'checked'} style="width:auto"></td><td><input type="number" step="0.5" data-j="${j.id}" data-f="coef" value="${j.coef}" ${j.count === false ? 'disabled' : ''}></td><td><input type="number" data-j="${j.id}" data-f="max" value="${j.max}"></td><td><button class="b r" data-del="${j.id}">✕</button></td></tr>`).join('');
 }
 function bindSettings() {
   const onSet = e => {
@@ -126,6 +126,7 @@ function bindSettings() {
   $('#calcForm').addEventListener('input', onSet);
   $('#subjTable').addEventListener('input', e => {
     const t = e.target, j = st.subjects.find(x => x.id === t.dataset.j); if (!j) return;
+    if (t.dataset.f === 'count') { j.count = t.checked; save(); renderSettings(); return; }
     j[t.dataset.f] = t.dataset.f === 'name' ? t.value : Number(t.value); save();
   });
   $('#subjTable').addEventListener('click', e => {
@@ -149,7 +150,7 @@ function bindSettings() {
       st.settings[t.dataset.g] = nums; save();
     }
   });
-  $('#addSubj').onclick = () => { st.subjects.push({ id: uid(), name: 'មុខវិជ្ជាថ្មី', coef: 1, max: Number(st.settings.M) || 50 }); save(); renderSettings(); };
+  $('#addSubj').onclick = () => { st.subjects.push({ id: uid(), name: 'មុខវិជ្ជាថ្មី', count: true, coef: 1, max: Number(st.settings.M) || 50 }); save(); renderSettings(); };
   $('#expJson').onclick = () => {
     const b = new Blob([JSON.stringify(st, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'report-card-backup.json'; a.click();
@@ -266,7 +267,7 @@ function scoreTable(k) {
   const ed = k !== 'y', subs = st.subjects;
   const lab = k === 'y' ? 'ប្រចាំឆ្នាំ' : 'ប្រចាំឆមាស';
   let h = '<thead><tr><th rowspan="2" class="sk c1">អត្តលេខ</th><th rowspan="2" class="sk c2">ឈ្មោះ</th><th rowspan="2" class="sk c3">ភេទ</th>' +
-    subs.map(j => `<th colspan="2">${esc(j.name)}<br><small>×${j.coef} · /${j.max}</small></th>`).join('') +
+    subs.map(j => `<th colspan="2">${esc(j.name)}<br><small>${j.count === false ? 'មិនគិតមេគុណ' : '×' + j.coef} · /${j.max}</small></th>`).join('') +
     `<th rowspan="2">ពិន្ទុសរុប</th><th rowspan="2">មធ្យមភាគ<br>ប្រឡង</th><th rowspan="2">ចំ.ថ្នាក់</th><th rowspan="2">មធ្យមភាគ<br>ខែ</th><th rowspan="2">ចំ.ថ្នាក់</th><th rowspan="2">មធ្យមភាគ<br>${lab}</th><th rowspan="2">ចំ.ថ្នាក់</th><th rowspan="2">និទ្ទេស</th></tr><tr>` +
     subs.map(() => '<th>ពិន្ទុ</th><th>ល.ថ្នាក់</th>').join('') + '</tr></thead><tbody>';
   st.students.forEach(s => {
