@@ -11,13 +11,13 @@ function rankMap(items) {
 
 function gradeOf(st, a) {
   if (a == null) return '';
-  const p = a / (Number(st.settings.M) || 50) * 100;
-  if (p >= 90) return 'A';
-  if (p >= 80) return 'B';
-  if (p >= 70) return 'C';
-  if (p >= 60) return 'D';
-  if (p >= 50) return 'E';
-  return 'F';
+  const S = st.settings, p = a / (Number(S.M) || 50) * 100;
+  if (S.gradeStyle === 'letters') {
+    const t = Array.isArray(S.gradeL) && S.gradeL.length === 5 ? S.gradeL : [90, 80, 70, 60, 50];
+    return p >= t[0] ? 'A' : p >= t[1] ? 'B' : p >= t[2] ? 'C' : p >= t[3] ? 'D' : p >= t[4] ? 'E' : 'F';
+  }
+  const w = Array.isArray(S.gradeW) && S.gradeW.length === 3 ? S.gradeW : [80, 65, 50];
+  return p >= w[0] ? 'ល្អ' : p >= w[1] ? 'ល្អបង្គួរ' : p >= w[2] ? 'មធ្យម' : 'ខ្សោយ';
 }
 
 function addRanks(st, rows, pairs) {

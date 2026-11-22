@@ -8,11 +8,39 @@ const f2 = v => v == null ? '' : (Math.round(v * 100) / 100).toFixed(2);
 const FIELDS = [['office', 'ឈ្មោះការិយាល័យ'], ['province', 'ខេត្ត'], ['school', 'ឈ្មោះសាលា'], ['cls', 'ថ្នាក់'], ['year', 'ឆ្នាំសិក្សា'], ['date', 'កាលបរិច្ឆេទ'], ['lunar', 'ថ្ងៃ ខែ ឆ្នាំ ចន្ទគតិ'], ['signDate', 'ទីកន្លែង និងកាលបរិច្ឆេទចុះហត្ថលេខា'], ['teacher', 'ឈ្មោះគ្រូបន្ទុក'], ['principal', 'ឈ្មោះនាយកសាលា']];
 const CALC = [['M', 'មធ្យមភាគពេញ (ឧ. ៥០)'], ['skillPct', 'វិជ្ជាសម្បទា = ម.ប្រចាំឆ្នាំ × ...%'], ['skillMax', 'ពិន្ទុបំណិនសម្បទា (ពេញ)'], ['charMax', 'ពិន្ទុចរិយាសម្បទា (ពេញ)']];
 
+const TBL_SUBJ = ['ភាសាខ្មែរ', 'គណិតវិទ្យា', 'រូបវិទ្យា', 'គីមីវិទ្យា', 'ជីវវិទ្យា', 'ប្រវត្តិវិទ្យា', 'ព័ត៌មានវិទ្យា', 'សីលធម៌', 'ផែនដីវិទ្យា', 'ភូមិវិទ្យា', 'គេហវិទ្យា', 'អប់រំកាយ', 'ភាសាចិន/បំណិន', 'សេដ្ឋកិច្ច', 'សិល្បៈ', 'កសិកម្ម', 'អង់គ្លេស'];
+const _L7 = [100, 100, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, null, 50, 50, 50];
+const _L9 = [100, 100, 35, 25, 35, 33, 50, 35, 25, 32, 50, 50, 50, null, 50, 50, 50];
+const _L10 = [150, 150, 50, 37, 38, 37, 50, 38, 25, 38, 37, 50, 50, null, 50, 50, 100];
+const _SCI = [75, 125, 75, 75, 75, 50, 50, 50, 50, 50, null, 50, 50, 50, 50, 50, 50];
+const _SOC = [125, 75, 50, 50, 50, 75, 50, 75, 50, 75, null, 50, 50, 50, 50, 50, 50];
+const LEVEL_MAX = { '7': _L7, '8': _L7, '9': _L9, '10': _L10, '11 វិទ្យាសាស្ត្រ': _SCI, '11 សង្គម': _SOC, '12 វិទ្យាសាស្ត្រ': _SCI, '12 សង្គម': _SOC };
+const DISPLAY_ORDER = ['ភាសាខ្មែរ', 'សីលធម៌', 'ប្រវត្តិវិទ្យា', 'ភូមិវិទ្យា', 'គណិតវិទ្យា', 'រូបវិទ្យា', 'គីមីវិទ្យា', 'ជីវវិទ្យា', 'ផែនដីវិទ្យា', 'អង់គ្លេស', 'គេហវិទ្យា', 'កសិកម្ម', 'អប់រំកាយ', 'ព័ត៌មានវិទ្យា', 'ភាសាចិន/បំណិន', 'សេដ្ឋកិច្ច', 'សិល្បៈ'];
+const NAME_ALIAS = { 'សីល-ពលរដ្ឋ': 'សីលធម៌', 'សីលធម៌-ពលរដ្ឋ': 'សីលធម៌', 'ភាសាអង់គ្លេស': 'អង់គ្លេស', 'ការអប់រំកាយ': 'អប់រំកាយ' };
+const canon = n => { n = String(n || '').trim(); return NAME_ALIAS[n] || n; };
+const coefOf = (max, M) => Math.round(max / (Number(M) || 50) * 1000) / 1000;
+function subjectsForLevel(lv) {
+  const arr = LEVEL_MAX[lv]; if (!arr) return [];
+  return DISPLAY_ORDER.map(n => [n, arr[TBL_SUBJ.indexOf(n)]]).filter(x => x[1] != null);
+}
+/* ជ្រើសកម្រិតថ្នាក់ → កំណត់មុខវិជ្ជា + ពិន្ទុពេញ + មេគុណ (= ពិន្ទុពេញ ÷ មធ្យមភាគពេញ) ស្វ័យប្រវត្តិ */
+function applyLevel(lv) {
+  const list = subjectsForLevel(lv); if (!list.length) return false;
+  const M = st.settings.M, keep = new Set(list.map(x => x[0]));
+  const removed = st.subjects.filter(j => TBL_SUBJ.includes(canon(j.name)) && !keep.has(canon(j.name)));
+  const hasScore = removed.some(j => st.students.some(s => (s.s1 || {})[j.id] !== undefined || (s.s2 || {})[j.id] !== undefined));
+  if (hasScore && !confirm('មុខវិជ្ជាខ្លះ (' + removed.map(j => j.name).join(', ') + ') មិនមានក្នុងកម្រិតនេះ ហើយមានពិន្ទុរួចហើយ។ ពិន្ទុទាំងនោះនឹងត្រូវលុប។ បន្ត?')) return false;
+  const byName = {}; st.subjects.forEach(j => { byName[canon(j.name)] = j; });
+  const next = list.map(([name, max]) => { const o = byName[name]; return { id: o ? o.id : uid(), name, max, coef: coefOf(max, M) }; });
+  const custom = st.subjects.filter(j => !TBL_SUBJ.includes(canon(j.name)));
+  removed.forEach(j => st.students.forEach(s => { delete (s.s1 || {})[j.id]; delete (s.s2 || {})[j.id]; }));
+  st.subjects = next.concat(custom);
+  st.settings.level = lv; save(); return true;
+}
 function defaults() {
-  const names = [['ភាសាខ្មែរ', 2], ['សីល-ពលរដ្ឋ', 1], ['ប្រវត្តិវិទ្យា', 1], ['ភូមិវិទ្យា', 1], ['គណិតវិទ្យា', 3], ['រូបវិទ្យា', 2], ['គីមីវិទ្យា', 2], ['ជីវវិទ្យា', 2], ['ផែនដីវិទ្យា', 1], ['អង់គ្លេស', 2], ['គេហវិទ្យា', 1], ['កសិកម្ម', 1], ['អប់រំកាយ', 1], ['អប់រំកាយ ២', 1], ['ព័ត៌មានវិទ្យា', 1], ['ភាសាចិន/បំណិន', 1], ['សេដ្ឋកិច្ច', 1]];
   return {
-    settings: { office: 'ការិយាល័យ អប់រំ យុវជន និង កីឡា ស្រុកកណ្តៀង', province: 'ពោធិ៍សាត់', school: 'វិទ្យាល័យ ហ៊ុន សែន កណ្តៀង', cls: '១២ A', year: '២០២៦-២០២៧', date: '12/11/2026', lunar: 'ថ្ងៃសុក្រ ៨កើត ខែមិគសិរ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស.២៥៦៩', signDate: 'កណ្តៀង ថ្ងៃទី២៨ ខែវិច្ឆិកា ឆ្នាំ២០២៥', teacher: 'អុឹម រើន', principal: '', M: 50, skillPct: 80, skillMax: 5, charMax: 5 },
-    subjects: names.map(([name, coef]) => ({ id: uid(), name, coef, max: 50 })),
+    settings: { office: 'ការិយាល័យ អប់រំ យុវជន និង កីឡា ស្រុកកណ្តៀង', province: 'ពោធិ៍សាត់', school: 'វិទ្យាល័យ ហ៊ុន សែន កណ្តៀង', cls: '១២ A', year: '២០២៦-២០២៧', date: '12/11/2026', lunar: 'ថ្ងៃសុក្រ ៨កើត ខែមិគសិរ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស.២៥៦៩', signDate: 'កណ្តៀង ថ្ងៃទី២៨ ខែវិច្ឆិកា ឆ្នាំ២០២៥', teacher: 'អុឹម រើន', principal: '', M: 50, skillPct: 80, skillMax: 5, charMax: 5, level: '12 វិទ្យាសាស្ត្រ', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] },
+    subjects: subjectsForLevel('12 វិទ្យាសាស្ត្រ').map(([name, max]) => ({ id: uid(), name, max, coef: coefOf(max, 50) })),
     students: []
   };
 }
@@ -22,6 +50,7 @@ function load() {
     const j = JSON.parse(localStorage.getItem(KEY));
     if (j && j.data) {
       st = j.data; ui = Object.assign(ui, j.ui || {});
+      st.settings = Object.assign({ level: '', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] }, st.settings);
       st.students = st.students.map(s => Object.assign(newStudent(), s));
       return;
     }
@@ -42,7 +71,7 @@ const recalc = () => { C = yearAll(st); return C; };
 const normSex = v => { const s = String(v).trim().toLowerCase(); if (['ស្រី', 'ស', 'f', 'female', 'woman'].includes(s)) return 'ស្រី'; return 'ប្រុស'; };
 const splitName = n => { const p = String(n || '').trim().split(/\s+/); return [p[0] || '', p.slice(1).join(' ')]; };
 const COND = [['moral', 'សីលធម៌'], ['labor', 'ពលកម្ម-បង្កបង្កើនផល'], ['health', 'សុខភាព-អនាម័យ']];
-const COND_OPTS = ['ល្អ', 'ល្អបង្គួរ', 'មធ្យម', 'ខ្សោយ'];
+const COND_OPTS = ['ល្អ', 'ល្អបង្គួរ', 'មធ្យម', 'ខ្សោយ', 'A', 'B', 'C', 'D', 'E', 'F'];
 const defCond = () => ({ moral: ['ល្អ', 'ល្អ', 'ល្អ'], labor: ['ល្អ', 'ល្អ', 'ល្អ'], health: ['ល្អ', 'ល្អ', 'ល្អ'] });
 const newStudent = (o = {}) => Object.assign({ id: uid(), sid: '', name: '', sex: 'ប្រុស', dob: '', a1p: 0, a1u: 0, a2p: 0, a2u: 0, m1: '', m2: '', skill: '', char: '', cond: defCond(), s1: {}, s2: {} }, o);
 const GRADE_LABEL = { A: 'ល្អប្រសើរ', B: 'ល្អណាស់', C: 'ល្អ', D: 'ល្អបង្គួរ', E: 'មធ្យម', F: 'ខ្សោយ' };
@@ -51,7 +80,11 @@ const GRADE_LABEL = { A: 'ល្អប្រសើរ', B: 'ល្អណាស�
 function renderSettings() {
   $('#setForm').innerHTML = FIELDS.map(([k, l]) => `<div><label>${l}</label><input data-k="${k}" value="${esc(st.settings[k] || '')}"></div>`).join('');
   $('#calcForm').innerHTML = CALC.map(([k, l]) => `<div><label>${l}</label><input type="number" step="any" data-k="${k}" value="${st.settings[k]}"></div>`).join('') +
-    `<div><label>&nbsp;</label><label class="inl"><input type="checkbox" id="khDigits" ${ui.kh ? 'checked' : ''}> លេខខ្មែរក្នុងក្បាលព្រឹត្តិបត្រ (ឆ្នាំសិក្សា ថ្នាក់)</label></div>`;
+    `<div><label>&nbsp;</label><label class="inl"><input type="checkbox" id="khDigits" ${ui.kh ? 'checked' : ''}> លេខខ្មែរក្នុងក្បាលព្រឹត្តិបត្រ (ឆ្នាំសិក្សា ថ្នាក់)</label></div>` +
+    `<div><label>ទម្រង់និទ្ទេស</label><select id="gradeStyle"><option value="words" ${st.settings.gradeStyle !== 'letters' ? 'selected' : ''}>ល្អ / ល្អបង្គួរ / មធ្យម / ខ្សោយ</option><option value="letters" ${st.settings.gradeStyle === 'letters' ? 'selected' : ''}>A / B / C / D / E / F</option></select></div>` +
+    `<div><label>ល្អ · ល្អបង្គួរ · មធ្យម (% ទាបបំផុត)</label><input data-g="gradeW" value="${(st.settings.gradeW || [80, 65, 50]).join(', ')}"></div>` +
+    `<div><label>A · B · C · D · E (% ទាបបំផុត)</label><input data-g="gradeL" value="${(st.settings.gradeL || [90, 80, 70, 60, 50]).join(', ')}"></div>`;
+  $('#levelSel').innerHTML = '<option value="">— ជ្រើសរើសកម្រិតថ្នាក់ —</option>' + Object.keys(LEVEL_MAX).map(l => `<option value="${l}" ${st.settings.level === l ? 'selected' : ''}>ថ្នាក់ទី ${l}</option>`).join('');
   $('#subjTable').innerHTML = '<tr><th>#</th><th>មុខវិជ្ជា</th><th>មេគុណ</th><th>ពិន្ទុពេញ</th><th></th></tr>' +
     st.subjects.map((j, i) => `<tr><td>${i + 1}</td><td><input data-j="${j.id}" data-f="name" value="${esc(j.name)}" style="text-align:left"></td><td><input type="number" step="0.5" data-j="${j.id}" data-f="coef" value="${j.coef}"></td><td><input type="number" data-j="${j.id}" data-f="max" value="${j.max}"></td><td><button class="b r" data-del="${j.id}">✕</button></td></tr>`).join('');
 }
@@ -74,6 +107,20 @@ function bindSettings() {
     st.subjects = st.subjects.filter(x => x.id !== id);
     st.students.forEach(s => { delete s.s1[id]; delete s.s2[id]; });
     save(); renderSettings();
+  });
+  $('#levelSel').onchange = e => {
+    const lv = e.target.value; if (!lv) return;
+    if (applyLevel(lv)) { renderSettings(); toast('បានកំណត់មុខវិជ្ជា ' + st.subjects.length + ' តាមថ្នាក់ទី ' + lv); }
+    else renderSettings();
+  };
+  $('#calcForm').addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'gradeStyle') { st.settings.gradeStyle = t.value; save(); return; }
+    if (t.dataset.g) {
+      const need = t.dataset.g === 'gradeW' ? 3 : 5, nums = t.value.split(/[,\s]+/).filter(Boolean).map(Number);
+      if (nums.length !== need || nums.some(isNaN)) { toast('សូមបញ្ចូលលេខ ' + need + ' ចែកដោយក្បៀស'); t.value = (st.settings[t.dataset.g] || []).join(', '); return; }
+      st.settings[t.dataset.g] = nums; save();
+    }
   });
   $('#addSubj').onclick = () => { st.subjects.push({ id: uid(), name: 'មុខវិជ្ជាថ្មី', coef: 1, max: Number(st.settings.M) || 50 }); save(); renderSettings(); };
   $('#expJson').onclick = () => {
@@ -373,7 +420,7 @@ function cardHTML(s) {
   const line = t => `<td class="n">${t}</td>`;
   const a1p = Number(s.a1p) || 0, a1u = Number(s.a1u) || 0, a2p = Number(s.a2p) || 0, a2u = Number(s.a2u) || 0;
   const condRow = (key, label, right) => `<tr><td class="n b">${label}</td>${[0, 1, 2].map(i => `<td colspan="2">${esc((cond[key] || [])[i] || 'ល្អ')}</td>`).join('')}${right}</tr>`;
-  const lbl = g => g.gr ? GRADE_LABEL[g.gr] : '';
+  const lbl = g => g.gr || '';
   const sign = (title, who, name) => `<div><div>${title}</div><div style="border-bottom:1.5px dotted #000;margin:20px 8px 14px"></div><div>${esc(S.lunar)}</div><div>${esc(S.signDate)}</div><div class="b">${who}</div><div class="sp"></div><div class="b">${esc(name)}</div></div>`;
   return `<div class="card" data-id="${s.id}"><div class="in">
   <div class="c moul" style="font-size:14px">ព្រះរាជាណាចក្រកម្ពុជា</div>
@@ -475,6 +522,10 @@ async function pull() {
     const set = Object.assign({}, d.settings);
     ['M', 'skillPct', 'skillMax', 'charMax'].forEach(k => { if (k in set) set[k] = Number(set[k]) || st.settings[k]; });
     st.settings = Object.assign(st.settings, set);
+    [['gradeW', 3, [80, 65, 50]], ['gradeL', 5, [90, 80, 70, 60, 50]]].forEach(([k, n, df]) => {
+      const v = typeof st.settings[k] === 'string' ? st.settings[k].split(',').map(Number) : st.settings[k];
+      st.settings[k] = (Array.isArray(v) && v.length === n && !v.some(isNaN)) ? v : df;
+    });
     st.students = d.students.map(s => newStudent(Object.assign({}, s, { a1p: Number(s.a1p) || 0, a1u: Number(s.a1u) || 0, a2p: Number(s.a2p) || 0, a2u: Number(s.a2u) || 0, m1: num(s.m1), m2: num(s.m2), skill: num(s.skill), char: num(s.char), cond: (s.cond && s.cond.moral) ? s.cond : defCond() })));
     save(); renderAll(); toast('ទាញយកបានជោគជ័យ');
   } catch (e) { setStatus('ទាញយកមិនបាន'); toast('មានបញ្ហា ៖ ' + e.message); }

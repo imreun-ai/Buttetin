@@ -24,4 +24,5 @@ Open the app → tab **៨. Google Sheet** and follow the steps (copy the Apps S
 - Semester average = (exam average + monthly average) ÷ 2.
 - Yearly values = (semester 1 + semester 2) ÷ 2.
 - វិជ្ជាសម្បទា = yearly average × `skillPct`/100; total = វិជ្ជាសម្បទា + បំណិន + ចរិយា.
-- Grade by percentage of `M`: A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, E ≥ 50, F < 50.
+- Level (grade 7–12) sets each subject's full score from the school table; coefficient = full score ÷ `M` (editable). Subjects with no score for that level are removed.
+- Grade by percentage of `M`; style selectable in Settings: words (ល្អ ≥ 80, ល្អបង្គួរ ≥ 65, មធ្យម ≥ 50, ខ្សោយ) or letters (A ≥ 90 … F < 50). Thresholds are editable.
