@@ -222,6 +222,7 @@ function renderStudents() {
     <td><input type="number" min="0" data-f="a2p" value="${s.a2p}"></td>
     <td><input type="number" min="0" data-f="a2u" value="${s.a2u}"></td>
     <td><button class="b r" data-del="${s.id}">✕</button></td></tr>`).join('');
+  applyAllQ();
 }
 function bindStudents() {
   $('#stuTable').addEventListener('input', e => {
@@ -297,6 +298,7 @@ function renderSem(k) {
   el.innerHTML = scoreTable(k);
   recalc();
   refreshTable(el, k === 1 ? C.A : k === 2 ? C.B : C.Y);
+  applyAllQ();
 }
 function bindSem(k) {
   const el = $('#tbl' + k);
@@ -374,6 +376,7 @@ function renderSkill() {
       COND.map(([key]) => [0, 1, 2].map(i => `<td><select data-s="${s.id}" data-cond="${key}" data-i="${i}">${COND_OPTS.map(o => `<option ${((s.cond && s.cond[key] && s.cond[key][i]) || 'ល្អ') === o ? 'selected' : ''}>${o}</option>`).join('')}</select></td>`).join('')).join('') + '</tr>';
     }).join('') + '</tbody>';
   refreshSkill();
+  applyAllQ();
 }
 function refreshSkill() {
   $$('#tblK [data-k]').forEach(el => {
@@ -569,6 +572,25 @@ function bindSync() {
   $('#pushG').onclick = () => push(false);
   $('#pullG').onclick = pull;
 }
+
+/* ===== ស្វែងរក (ឈ្មោះ / អត្តលេខ) ===== */
+const normQ = s => toLat(String(s == null ? '' : s)).toLowerCase().replace(/\s+/g, '');
+function applyQ(inp) {
+  const table = $(inp.dataset.q); if (!table) return;
+  const words = toLat(inp.value).toLowerCase().split(/\s+/).filter(Boolean);
+  const byId = {}; st.students.forEach(s => { byId[s.id] = s; });
+  let shown = 0, total = 0;
+  $$('tr[data-id]', table).forEach(tr => {
+    const s = byId[tr.dataset.id]; total++;
+    const hay = normQ(s ? s.name + ' ' + s.sid : '') + ' ' + toLat(s ? s.name : '').toLowerCase();
+    const ok = !words.length || words.every(w => hay.includes(w.replace(/\s+/g, '')));
+    tr.hidden = !ok; if (ok) shown++;
+  });
+  const c = inp.parentElement.querySelector('.qc');
+  if (c) c.textContent = words.length ? 'បង្ហាញ ' + shown + ' / ' + total : '';
+}
+const applyAllQ = () => $$('input.q').forEach(applyQ);
+document.addEventListener('input', e => { if (e.target.classList && e.target.classList.contains('q')) applyQ(e.target); });
 
 /* ===== Tabs ===== */
 function showTab(p) {
