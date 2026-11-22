@@ -51,7 +51,7 @@ const GRADE_LABEL = { A: 'ល្អប្រសើរ', B: 'ល្អណាស�
 function renderSettings() {
   $('#setForm').innerHTML = FIELDS.map(([k, l]) => `<div><label>${l}</label><input data-k="${k}" value="${esc(st.settings[k] || '')}"></div>`).join('');
   $('#calcForm').innerHTML = CALC.map(([k, l]) => `<div><label>${l}</label><input type="number" step="any" data-k="${k}" value="${st.settings[k]}"></div>`).join('') +
-    `<div><label>&nbsp;</label><label class="inl"><input type="checkbox" id="khDigits" ${ui.kh ? 'checked' : ''}> លេខខ្មែរក្នុងព្រឹត្តិបត្រ</label></div>`;
+    `<div><label>&nbsp;</label><label class="inl"><input type="checkbox" id="khDigits" ${ui.kh ? 'checked' : ''}> លេខខ្មែរក្នុងក្បាលព្រឹត្តិបត្រ (ឆ្នាំសិក្សា ថ្នាក់)</label></div>`;
   $('#subjTable').innerHTML = '<tr><th>#</th><th>មុខវិជ្ជា</th><th>មេគុណ</th><th>ពិន្ទុពេញ</th><th></th></tr>' +
     st.subjects.map((j, i) => `<tr><td>${i + 1}</td><td><input data-j="${j.id}" data-f="name" value="${esc(j.name)}" style="text-align:left"></td><td><input type="number" step="0.5" data-j="${j.id}" data-f="coef" value="${j.coef}"></td><td><input type="number" data-j="${j.id}" data-f="max" value="${j.max}"></td><td><button class="b r" data-del="${j.id}">✕</button></td></tr>`).join('');
 }
@@ -358,10 +358,10 @@ function renderSelect() {
 }
 function cardHTML(s) {
   const S = st.settings, A = C.A.rows[s.id], B = C.B.rows[s.id], Y = C.Y.rows[s.id], K = C.K.rows[s.id];
-  const fm = v => v == null ? '' : kd(f2(v));
-  const fr = v => v == null ? '' : kd(v);
-  const sc = v => v == null ? '' : kd(String(Math.round(v * 100) / 100));
-  const p2 = n => kd(String(Number(n) || 0).padStart(2, '0'));
+  const fm = v => v == null ? '' : f2(v);
+  const fr = v => v == null ? '' : String(v);
+  const sc = v => v == null ? '' : String(Math.round(v * 100) / 100);
+  const p2 = n => String(Number(n) || 0).padStart(2, '0');
   const grp = [A, B, Y];
   const cond = s.cond || defCond();
   const rows = st.subjects.map(j => {
@@ -374,7 +374,6 @@ function cardHTML(s) {
   const a1p = Number(s.a1p) || 0, a1u = Number(s.a1u) || 0, a2p = Number(s.a2p) || 0, a2u = Number(s.a2u) || 0;
   const condRow = (key, label, right) => `<tr><td class="n b">${label}</td>${[0, 1, 2].map(i => `<td colspan="2">${esc((cond[key] || [])[i] || 'ល្អ')}</td>`).join('')}${right}</tr>`;
   const lbl = g => g.gr ? GRADE_LABEL[g.gr] : '';
-  const finalGrade = gradeOf(st, K.tot);
   const sign = (title, who, name) => `<div><div>${title}</div><div style="border-bottom:1.5px dotted #000;margin:20px 8px 14px"></div><div>${esc(S.lunar)}</div><div>${esc(S.signDate)}</div><div class="b">${who}</div><div class="sp"></div><div class="b">${esc(name)}</div></div>`;
   return `<div class="card" data-id="${s.id}"><div class="in">
   <div class="c moul" style="font-size:14px">ព្រះរាជាណាចក្រកម្ពុជា</div>
@@ -383,7 +382,7 @@ function cardHTML(s) {
   <h2 class="red">ព្រឹត្តិបត្រពិន្ទុប្រចាំឆ្នាំសិក្សា ${esc(kd(S.year))}</h2>
   <table class="ib"><colgroup><col style="width:21%"><col style="width:3%"><col style="width:30%"><col style="width:14%"><col style="width:3%"><col></colgroup>
     <tr><td>របស់សិស្សឈ្មោះ</td><td>:</td><td class="blue">${esc(s.name)}</td><td>ភេទ</td><td>:</td><td class="blue">${esc(s.sex)}</td></tr>
-    <tr><td>ថ្ងៃខែឆ្នាំកំណើត</td><td>:</td><td class="blue" style="font-weight:400">${esc(kd(s.dob))}</td><td>ថ្នាក់ទី</td><td>:</td><td class="blue">${esc(kd(S.cls))}</td></tr></table>
+    <tr><td>ថ្ងៃខែឆ្នាំកំណើត</td><td>:</td><td class="blue" style="font-weight:400">${esc(s.dob)}</td><td>ថ្នាក់ទី</td><td>:</td><td class="blue">${esc(kd(S.cls))}</td></tr></table>
   <table class="main"><colgroup><col style="width:150px">${'<col style="width:54px"><col style="width:54px">'.repeat(3)}<col></colgroup>
   <tr><th rowspan="2">មុខវិជ្ជា</th><th colspan="2">ឆមាសទី១</th><th colspan="2">ឆមាសទី២</th><th colspan="2">ប្រចាំឆ្នាំ</th><th rowspan="2" style="font-size:11.5px">មូលវិចារ ហត្ថលេខា<br>និងឈ្មោះគ្រូមុខវិជ្ជា</th></tr>
   <tr>${'<th>ពិន្ទុ</th><th class="red">ចំ.ថ្នាក់</th>'.repeat(3)}</tr>
@@ -393,9 +392,9 @@ function cardHTML(s) {
   ${pair('មធ្យមភាគពិន្ទុខែឆមាស', 'mo', 'mrk', line('លិខិតសរសើរចំនួន............'))}
   ${pair('មធ្យមភាគពិន្ទុប្រចាំឆមាស', 'sav', 'srk', line('សក្ខីប័ណ្ណលើកទឹកចិត្ត........'))}
   ${condRow('moral', 'សីលធម៌', line('មធ្យមភាគពិន្ទុវិជ្ជាសម្បទា : ' + fm(K.vij)))}
-  ${condRow('labor', 'ពលកម្ម-បង្កបង្កើនផល', line('មធ្យមភាគពិន្ទុបំណិនសម្បទា : ' + (s.skill === '' || s.skill == null ? '' : kd(f2(Number(s.skill))))))}
-  ${condRow('health', 'សុខភាព-អនាម័យ', line('មធ្យមភាគពិន្ទុចរិយាសម្បទា : ' + (s.char === '' || s.char == null ? '' : kd(f2(Number(s.char))))))}
-  <tr><td class="n b" rowspan="2">ចំនួនអវត្តមាន</td><td colspan="2">មានច្បាប់:${p2(a1p)} ដង</td><td colspan="2">មានច្បាប់:${p2(a2p)} ដង</td><td colspan="2">មានច្បាប់:${p2(a1p + a2p)} ដង</td>${line('មធ្យមភាគពិន្ទុប្រចាំឆ្នាំ : <b>' + finalGrade + '</b>')}</tr>
+  ${condRow('labor', 'ពលកម្ម-បង្កបង្កើនផល', line('មធ្យមភាគពិន្ទុបំណិនសម្បទា : ' + (s.skill === '' || s.skill == null ? '' : f2(Number(s.skill)))))}
+  ${condRow('health', 'សុខភាព-អនាម័យ', line('មធ្យមភាគពិន្ទុចរិយាសម្បទា : ' + (s.char === '' || s.char == null ? '' : f2(Number(s.char)))))}
+  <tr><td class="n b" rowspan="2">ចំនួនអវត្តមាន</td><td colspan="2">មានច្បាប់:${p2(a1p)} ដង</td><td colspan="2">មានច្បាប់:${p2(a2p)} ដង</td><td colspan="2">មានច្បាប់:${p2(a1p + a2p)} ដង</td>${line('មធ្យមភាគពិន្ទុប្រចាំឆ្នាំ : <b>' + fm(K.tot) + '</b>')}</tr>
   <tr><td colspan="2">អត់ច្បាប់:${p2(a1u)} ដង</td><td colspan="2">អត់ច្បាប់:${p2(a2u)} ដង</td><td colspan="2">អត់ច្បាប់:${p2(a1u + a2u)} ដង</td><td></td></tr>
   <tr><td class="n b">ការសិក្សា</td>${grp.map(g => `<td colspan="2">${lbl(g)}</td>`).join('')}<td></td></tr>
   </table>
