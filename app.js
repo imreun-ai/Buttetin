@@ -478,7 +478,7 @@ function cardHTML(s) {
   const a1p = Number(s.a1p) || 0, a1u = Number(s.a1u) || 0, a2p = Number(s.a2p) || 0, a2u = Number(s.a2u) || 0;
   const condRow = (key, label, right) => `<tr><td class="n b">${label}</td>${[0, 1, 2].map(i => `<td colspan="2">${esc((cond[key] || [])[i] || 'ល្អ')}</td>`).join('')}${right}</tr>`;
   const lbl = g => g.gr || '';
-  const sign = (title, who, name) => `<div><div>${title}</div><div style="border-bottom:1.5px dotted #000;margin:20px 8px 14px"></div><div>${esc(S.lunar)}</div><div>${esc(S.signDate)}</div><div class="b">${who}</div><div class="sp"></div><div class="b">${esc(name)}</div></div>`;
+  const sign = (title, who, name) => `<div><div>${title}</div><div style="border-bottom:1.5px dotted #000;margin:20px 8px 14px"></div><div>${esc(S.lunar)}</div><div>${esc(S.signDate)}</div><div class="b">${who}</div><div class="b" style="margin-top:8px;font-size:14px">${esc(name)}</div></div>`;
   return `<div class="card" data-id="${s.id}"><div class="in">
   <div class="c moul" style="font-size:14px">ព្រះរាជាណាចក្រកម្ពុជា</div>
   <div class="c moul" style="font-size:12.5px;margin-top:2px">ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
