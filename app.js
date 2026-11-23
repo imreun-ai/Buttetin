@@ -478,7 +478,7 @@ function cardHTML(s) {
   const a1p = Number(s.a1p) || 0, a1u = Number(s.a1u) || 0, a2p = Number(s.a2p) || 0, a2u = Number(s.a2u) || 0;
   const condRow = (key, label, right) => `<tr><td class="n b">${label}</td>${[0, 1, 2].map(i => `<td colspan="2">${esc((cond[key] || [])[i] || 'ល្អ')}</td>`).join('')}${right}</tr>`;
   const lbl = g => g.gr || '';
-  const sign = (title, who, name) => `<div><div>${title}</div><div style="border-bottom:1.5px dotted #000;margin:20px 8px 14px"></div><div>${esc(S.lunar)}</div><div>${esc(S.signDate)}</div><div class="b">${who}</div><div class="b" style="margin-top:8px;font-size:14px">${esc(name)}</div></div>`;
+  const sign = (title, who, name) => `<div><div>${title}</div><div style="border-bottom:1.5px dotted #000;margin:20px 8px 14px"></div><div>${esc(S.lunar)}</div><div>${esc(S.signDate)}</div><div class="b">${who}</div><div class="b" style="margin-top:46px;font-size:14px;transform:translateX(26px)">${esc(name)}</div></div>`;
   return `<div class="card" data-id="${s.id}"><div class="in">
   <div class="c moul" style="font-size:14px">ព្រះរាជាណាចក្រកម្ពុជា</div>
   <div class="c moul" style="font-size:12.5px;margin-top:2px">ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
@@ -682,15 +682,19 @@ async function fetchRoster() {
     const ci = colOf(h, ['អត្តលេខ', 'id']), cn = colOf(h, ['ឈ្មោះសិស្ស', 'ឈ្មោះ', 'name']), cs = colOf(h, ['ភេទ', 'sex']), cd = colOf(h, ['ថ្ងៃខែឆ្នាំកំណើត', 'dob']), cc = colOf(h, ['ថ្នាក់', 'class']);
     if (cn < 0 || cc < 0) throw new Error('រកមិនឃើញជួរ «ឈ្មោះសិស្ស» ឬ «ថ្នាក់» ក្នុង Sheet');
     const out = rows.slice(1).filter(r => String(r[cn] || '').trim()).map(r => mapRow({ sid: ci >= 0 ? r[ci] : '', name: r[cn], sex: cs >= 0 ? r[cs] : '', dob: cd >= 0 ? r[cd] : '', cls: r[cc] }));
-    let classes = [];
-    try { classes = parseCSV(await fetchSheetCSV(CLASSES_TAB)).slice(1).map(r => normCls(r[0])).filter(Boolean); } catch (e) {}
-    return { rows: out, classes };
+    let classes = [], teachers = {};
+    try {
+      const cr = parseCSV(await fetchSheetCSV(CLASSES_TAB)), ch = cr[0] || [];
+      let ct = colOf(ch, ['គ្រូបន្ទុក', 'គ្រូបន្ទុកថ្នាក់', 'teacher']); if (ct < 0 && ch.length > 1) ct = 1;
+      cr.slice(1).forEach(r => { const k = normCls(r[0]); if (!k) return; classes.push(k); const t = ct >= 0 ? String(r[ct] || '').trim() : ''; if (t) teachers[k] = t; });
+    } catch (e) {}
+    return { rows: out, classes, teachers };
   } catch (e) { err = e; }
   if (ui.api) {
     try {
       const res = await fetch(ui.api + (ui.api.includes('?') ? '&' : '?') + 'action=roster'), j = await res.json();
       if (!j.ok) throw new Error(j.error);
-      return { rows: j.rows.map(mapRow), classes: (j.classes || []).map(normCls) };
+      return { rows: j.rows.map(mapRow), classes: (j.classes || []).map(normCls), teachers: j.teachers || {} };
     } catch (e2) { err = new Error(err.message + ' | Apps Script ៖ ' + e2.message); }
   }
   throw err;
@@ -717,7 +721,7 @@ async function syncRoster(manual) {
   let data, offline = false;
   try {
     data = await fetchRoster();
-    try { localStorage.setItem(ROSTER_KEY, JSON.stringify({ at: Date.now(), rows: data.rows, classes: data.classes })); } catch (e) {}
+    try { localStorage.setItem(ROSTER_KEY, JSON.stringify({ at: Date.now(), rows: data.rows, classes: data.classes, teachers: data.teachers || {} })); } catch (e) {}
   } catch (e) {
     const c = rosterCache();
     if (c) { data = c; offline = true; }
@@ -725,6 +729,7 @@ async function syncRoster(manual) {
   }
   if (cls !== normCls(st.settings.cls)) { rosterBusy = false; return; }   // ថ្នាក់ត្រូវបានប្តូរអំឡុងពេលរង់ចាំ
   const r = mergeRoster(cls, data.rows);
+  const tn = (data.teachers || {})[cls]; if (tn) st.settings.teacher = tn;   // គ្រូបន្ទុកពី Sheet «ថ្នាក់»
   save(); renderAll(); rosterBusy = false;
   const t = (offline ? '(ប្រើទិន្នន័យចាស់ក្នុងម៉ាស៊ីន) ' : '') + 'ថ្នាក់ ' + cls + ' ៖ ' + r.total + ' នាក់ ក្នុង Sheet · បន្ថែមថ្មី ' + r.add + ' · ធ្វើបច្ចុប្បន្នភាព ' + r.upd + (r.extra ? ' · មិនមានក្នុង Sheet ' + r.extra + ' (រក្សាទុក)' : '');
   setStatus('ទាញឈ្មោះសិស្សរួច ' + new Date().toLocaleTimeString());

@@ -107,8 +107,12 @@ function roster_() {
       return { sid: r[ci], name: r[cn], sex: r[cs], dob: r[cd], cls: r[cc] };
     });
     var cl = ss.getSheetByName('ថ្នាក់');
-    var classes = cl ? cl.getDataRange().getValues().slice(1).map(function (r) { return String(r[0]).trim(); }).filter(String) : [];
-    return json_({ ok: true, rows: rows, classes: classes });
+    var classes = [], teachers = {};
+    if (cl) cl.getDataRange().getValues().slice(1).forEach(function (r) {
+      var k = String(r[0]).trim(); if (!k) return;
+      classes.push(k); if (String(r[1] || '').trim()) teachers[k] = String(r[1]).trim();
+    });
+    return json_({ ok: true, rows: rows, classes: classes, teachers: teachers });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }
