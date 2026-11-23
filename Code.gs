@@ -3,11 +3,13 @@
  * 1) Run setup() ម្តង ដើម្បីបង្កើត Sheet   2) Deploy ជា Web app (Anyone)
  */
 var SPREADSHEET_ID = '1A7HNCPOa3s1r75X0ycEF8OatRDC3cyWnBIGYHwxWFew';
+var ROSTER_ID = '16Qwf980aFgGEO2P4a7t4i-YSiGINXuKhjUkzYuMpf5A';   // Sheet ឈ្មោះសិស្ស (ភ្ជាប់ជាប់ជានិច្ច)
 var TABLES = {
   settings: { name: 'App_ការកំណត់', head: ['key', 'value'] },
   subjects: { name: 'App_មុខវិជ្ជា', head: ['id', 'name', 'coef', 'max', 'count'] },
   students: { name: 'App_សិស្ស', head: ['id', 'sid', 'name', 'sex', 'dob', 'a1p', 'a1u', 'a2p', 'a2u', 'm1', 'm2', 'skill', 'char', 'cond'] },
-  scores:   { name: 'App_ពិន្ទុ', head: ['studentId', 'subjectId', 's1', 's2'] }
+  scores:   { name: 'App_ពិន្ទុ', head: ['studentId', 'subjectId', 's1', 's2'] },
+  classes:  { name: 'App_ថ្នាក់', head: ['cls', 'part', 'json'] }
 };
 
 function getSS_() {
@@ -81,6 +83,12 @@ function doPost(e) {
       }
     });
     write_('scores', sc);
+    var store = d.store || {}, crow = [];
+    for (var ck in store) {
+      var js = JSON.stringify(store[ck]);
+      for (var p = 0, i = 0; i < js.length; i += 40000, p++) crow.push([ck, p, js.substr(i, 40000)]);
+    }
+    write_('classes', crow);
     return json_({ ok: true, students: (d.students || []).length, scores: sc.length });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -89,7 +97,25 @@ function doPost(e) {
   }
 }
 
+function roster_() {
+  try {
+    var ss = SpreadsheetApp.openById(ROSTER_ID);
+    var v = ss.getSheetByName('ឈ្មោះសិស្ស').getDataRange().getDisplayValues();
+    var h = v[0].map(function (x) { return String(x).replace(/\s/g, ''); });
+    var ci = h.indexOf('អត្តលេខ'), cn = h.indexOf('ឈ្មោះសិស្ស'), cs = h.indexOf('ភេទ'), cd = h.indexOf('ថ្ងៃខែឆ្នាំកំណើត'), cc = h.indexOf('ថ្នាក់');
+    var rows = v.slice(1).filter(function (r) { return r[cn]; }).map(function (r) {
+      return { sid: r[ci], name: r[cn], sex: r[cs], dob: r[cd], cls: r[cc] };
+    });
+    var cl = ss.getSheetByName('ថ្នាក់');
+    var classes = cl ? cl.getDataRange().getValues().slice(1).map(function (r) { return String(r[0]).trim(); }).filter(String) : [];
+    return json_({ ok: true, rows: rows, classes: classes });
+  } catch (err) {
+    return json_({ ok: false, error: String(err) });
+  }
+}
+
 function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'roster') return roster_();
   try {
     var settings = {};
     read_('settings').forEach(function (r) { settings[r[0]] = r[1]; });
@@ -110,7 +136,13 @@ function doGet(e) {
       if (r[2] !== '') s.s1[String(r[1])] = Number(r[2]);
       if (r[3] !== '') s.s2[String(r[1])] = Number(r[3]);
     });
-    return json_({ ok: true, data: { settings: settings, subjects: subjects, students: students } });
+    var store = {}, parts = {};
+    read_('classes').forEach(function (r) { var k = String(r[0]); (parts[k] = parts[k] || []).push([Number(r[1]), String(r[2])]); });
+    for (var k in parts) {
+      parts[k].sort(function (a, b) { return a[0] - b[0]; });
+      try { store[k] = JSON.parse(parts[k].map(function (x) { return x[1]; }).join('')); } catch (x) {}
+    }
+    return json_({ ok: true, data: { settings: settings, subjects: subjects, students: students, store: store } });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }

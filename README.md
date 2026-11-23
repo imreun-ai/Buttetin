@@ -30,3 +30,6 @@ Open the app → tab **៨. Google Sheet** and follow the steps (copy the Apps S
 
 ## Dates
 Enter the date as `dd/mm/yyyy` in Settings. Solar date (សុរិយគតិ) is built in; lunar date (ចន្ទគតិ) uses [momentkh](https://github.com/ThyrithSor/momentkh) (MIT) loaded from jsDelivr, so it needs internet. Student names on the card use the *Khmer OS Muol* font if installed (fallback: Google font *Moul*).
+
+## Student roster (Google Sheet, permanently linked)
+The class dropdown (7A … 12E) loads that class's students from the roster sheet (`ROSTER_ID` in `app.js` / `Code.gs`; tabs `ឈ្មោះសិស្ស`, `ថ្នាក់`). The sheet must be shared as *Anyone with the link – Viewer*; otherwise the app falls back to the Apps Script endpoint (`?action=roster`) or the last cached copy. Scores are stored per class; re-syncing updates name/sex/date of birth by student ID and never deletes scores.

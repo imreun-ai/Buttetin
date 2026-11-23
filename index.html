@@ -23,6 +23,7 @@
 <body>
 <header>
   <h1>ប្រព័ន្ធព្រឹត្តិបត្រពិន្ទុ</h1>
+  <select id="clsHdr" title="ជ្រើសរើសថ្នាក់" style="width:auto;padding:5px 8px"></select>
   <span id="status">រក្សាទុកក្នុង Local Storage</span>
 </header>
 <nav id="nav">
@@ -38,6 +39,11 @@
 <main>
 
 <section class="panel on" id="p-set">
+  <div class="box"><h3>ថ្នាក់ និងឈ្មោះសិស្ស</h3>
+    <div class="row"><div style="min-width:220px"><label>ថ្នាក់ (ជ្រើសរើស → បង្ហាញឈ្មោះសិស្សថ្នាក់នោះ)</label><select id="clsSel"></select></div>
+    <button class="b ok" id="syncRoster">🔄 ទាញឈ្មោះសិស្សពី Google Sheet</button></div>
+    <p class="hint" id="rosterMsg"></p>
+    <p class="hint">Google Sheet ដែលភ្ជាប់ជាប់ជានិច្ច ៖ <a href="https://docs.google.com/spreadsheets/d/16Qwf980aFgGEO2P4a7t4i-YSiGINXuKhjUkzYuMpf5A/edit" target="_blank" rel="noopener">រដ្ខបាលថ្នាក់រៀន</a> (ត្រូវចែករំលែកជា «Anyone with the link – Viewer»)។ ទិន្នន័យពិន្ទុរក្សាទុកដាច់ដោយឡែកតាមថ្នាក់។</p></div>
   <div class="box"><h3>ព័ត៌មានសាលា និងថ្នាក់</h3><div class="grid" id="setForm"></div></div>
   <div class="box"><h3>ការគណនា</h3><div class="grid" id="calcForm"></div>
     <p class="hint">និទ្ទេសគិតជាភាគរយនៃមធ្យមភាគពេញ ៖ A ≥ ៩០%, B ≥ ៨០%, C ≥ ៧០%, D ≥ ៦០%, E ≥ ៥០%, F &lt; ៥០%។ ពិន្ទុវិជ្ជាសម្បទា = មធ្យមភាគប្រចាំឆ្នាំ × (ភាគរយ ÷ ១០០)។</p></div>
@@ -59,6 +65,7 @@
     <h3>បញ្ជីសិស្ស (<span id="cnt">0</span>)</h3>
     <div class="row">
       <button class="b" id="addStu">+ បន្ថែមសិស្ស</button>
+      <button class="b ok" id="syncRoster2">🔄 ទាញឈ្មោះពី Google Sheet</button>
       <button class="b g" id="tplStu">⬇ គំរូ Excel</button>
       <button class="b ok" id="impStuBtn">⬆ នាំចូលពី Excel</button><input type="file" id="f-stu" accept=".xlsx,.xls,.csv" hidden>
       <button class="b g" id="expStu">នាំចេញ Excel</button>

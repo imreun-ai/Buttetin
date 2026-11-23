@@ -5,7 +5,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const f2 = v => v == null ? '' : (Math.round(v * 100) / 100).toFixed(2);
 
-const FIELDS = [['office', 'ឈ្មោះការិយាល័យ'], ['province', 'ខេត្ត'], ['school', 'ឈ្មោះសាលា'], ['cls', 'ថ្នាក់'], ['year', 'ឆ្នាំសិក្សា'], ['date', 'កាលបរិច្ឆេទ ថ្ងៃ/ខែ/ឆ្នាំ (ឧ. 21/11/2026) → បង្ហាញចន្ទគតិ និងសុរិយគតិស្វ័យប្រវត្តិ'], ['place', 'ទីកន្លែងចុះហត្ថលេខា (ឧ. កណ្តៀង)'], ['lunar', 'ចន្ទគតិ (ស្វ័យប្រវត្តិ · កែដោយដៃបាន)'], ['signDate', 'ទីកន្លែង និងសុរិយគតិ (ស្វ័យប្រវត្តិ · កែដោយដៃបាន)'], ['teacher', 'ឈ្មោះគ្រូបន្ទុក'], ['principal', 'ឈ្មោះនាយកសាលា']];
+const FIELDS = [['office', 'ឈ្មោះការិយាល័យ'], ['province', 'ខេត្ត'], ['school', 'ឈ្មោះសាលា'], ['year', 'ឆ្នាំសិក្សា'], ['date', 'កាលបរិច្ឆេទ ថ្ងៃ/ខែ/ឆ្នាំ (ឧ. 21/11/2026) → បង្ហាញចន្ទគតិ និងសុរិយគតិស្វ័យប្រវត្តិ'], ['place', 'ទីកន្លែងចុះហត្ថលេខា (ឧ. កណ្តៀង)'], ['lunar', 'ចន្ទគតិ (ស្វ័យប្រវត្តិ · កែដោយដៃបាន)'], ['signDate', 'ទីកន្លែង និងសុរិយគតិ (ស្វ័យប្រវត្តិ · កែដោយដៃបាន)'], ['teacher', 'ឈ្មោះគ្រូបន្ទុក'], ['principal', 'ឈ្មោះនាយកសាលា']];
 const CALC = [['M', 'មធ្យមភាគពេញ (ឧ. ៥០)'], ['skillPct', 'វិជ្ជាសម្បទា = ម.ប្រចាំឆ្នាំ × ...%'], ['skillMax', 'ពិន្ទុបំណិនសម្បទា (ពេញ)'], ['charMax', 'ពិន្ទុចរិយាសម្បទា (ពេញ)']];
 
 const TBL_SUBJ = ['ភាសាខ្មែរ', 'គណិតវិទ្យា', 'រូបវិទ្យា', 'គីមីវិទ្យា', 'ជីវវិទ្យា', 'ប្រវត្តិវិទ្យា', 'ព័ត៌មានវិទ្យា', 'សីលធម៌', 'ផែនដីវិទ្យា', 'ភូមិវិទ្យា', 'គេហវិទ្យា', 'អប់រំកាយ', 'ភាសាចិន/បំណិន', 'សេដ្ឋកិច្ច', 'សិល្បៈ', 'កសិកម្ម', 'អង់គ្លេស'];
@@ -62,11 +62,31 @@ function autoDates() {
   ['lunar', 'signDate'].forEach(k => { const el = document.querySelector('#setForm [data-k="' + k + '"]'); if (el) el.value = st.settings[k] || ''; });
   return !!r.lunar;
 }
+/* ===== ឈ្មោះសិស្សពី Google Sheet (ភ្ជាប់ជាប់ជានិច្ច) ===== */
+const ROSTER_ID = '16Qwf980aFgGEO2P4a7t4i-YSiGINXuKhjUkzYuMpf5A';
+const ROSTER_URL = 'https://docs.google.com/spreadsheets/d/' + ROSTER_ID + '/edit';
+const ROSTER_TAB = 'ឈ្មោះសិស្ស', CLASSES_TAB = 'ថ្នាក់', ROSTER_KEY = 'khRoster.v1';
+const CLASS_LIST = ['7A', '7B', '7C', '7D', '7E', '8A', '8B', '8C', '8D', '8E', '9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '10E', '11A', '11B', '11C', '11D', '11E', '11F', '12A', '12B', '12C', '12D', '12E'];
+const normCls = s => String(s == null ? '' : s).replace(/[០-៩]/g, d => '០១២៣៤៥៦៧៨៩'.indexOf(d)).replace(/\s+/g, '').toUpperCase();
+const gradeNum = c => parseInt(normCls(c), 10) || 0;
+function parseCSV(t) {
+  const rows = []; let r = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { r.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; r.push(f); f = ''; rows.push(r); r = []; }
+    else f += c;
+  }
+  if (f !== '' || r.length) { r.push(f); rows.push(r); }
+  return rows;
+}
 function defaults() {
   return {
-    settings: { office: 'ការិយាល័យ អប់រំ យុវជន និង កីឡា ស្រុកកណ្តៀង', province: 'ពោធិ៍សាត់', school: 'វិទ្យាល័យ ហ៊ុន សែន កណ្តៀង', cls: '១២ A', year: '២០២៦-២០២៧', date: '21/11/2026', place: 'កណ្តៀង', lunar: '', signDate: '', teacher: 'អុឹម រើន', principal: '', M: 50, skillPct: 80, skillMax: 5, charMax: 5, level: '12 វិទ្យាសាស្ត្រ', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] },
+    settings: { office: 'ការិយាល័យ អប់រំ យុវជន និង កីឡា ស្រុកកណ្តៀង', province: 'ពោធិ៍សាត់', school: 'វិទ្យាល័យ ហ៊ុន សែន កណ្តៀង', cls: '', year: '២០២៦-២០២៧', date: '21/11/2026', place: 'កណ្តៀង', lunar: '', signDate: '', teacher: 'អុឹម រើន', principal: '', M: 50, skillPct: 80, skillMax: 5, charMax: 5, level: '12 វិទ្យាសាស្ត្រ', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] },
     subjects: subjectsForLevel('12 វិទ្យាសាស្ត្រ').map(([name, max]) => ({ id: uid(), name, max, coef: coefOf(max, 50) })),
-    students: []
+    students: [], store: {}
   };
 }
 let st, ui = { api: '', auto: false, kh: true, sel: null, tab: 'set' }, C = null;
@@ -77,6 +97,8 @@ function load() {
       st = j.data; ui = Object.assign(ui, j.ui || {});
       st.settings = Object.assign({ level: '', gradeStyle: 'words', gradeW: [80, 65, 50], gradeL: [90, 80, 70, 60, 50] }, st.settings);
       st.students = st.students.map(s => Object.assign(newStudent(), s));
+      st.store = st.store || {};
+      st.settings.cls = normCls(st.settings.cls);
       return;
     }
   } catch (e) {}
@@ -150,6 +172,10 @@ function bindSettings() {
       st.settings[t.dataset.g] = nums; save();
     }
   });
+  $('#clsSel').onchange = e => onClassChange(e.target.value);
+  $('#clsHdr').onchange = e => onClassChange(e.target.value);
+  $('#syncRoster').onclick = () => syncRoster(true);
+  $('#syncRoster2').onclick = () => syncRoster(true);
   $('#addSubj').onclick = () => { st.subjects.push({ id: uid(), name: 'មុខវិជ្ជាថ្មី', count: true, coef: 1, max: Number(st.settings.M) || 50 }); save(); renderSettings(); };
   $('#expJson').onclick = () => {
     const b = new Blob([JSON.stringify(st, null, 1)], { type: 'application/json' });
@@ -158,7 +184,7 @@ function bindSettings() {
   $('#impJsonBtn').onclick = () => $('#impJson').click();
   $('#impJson').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
-    f.text().then(t => { try { const d = JSON.parse(t); if (!d.students || !d.subjects) throw 0; st = d; save(); renderAll(); toast('ស្តារបានជោគជ័យ'); } catch (x) { toast('ឯកសារមិនត្រឹមត្រូវ'); } });
+    f.text().then(t => { try { const d = JSON.parse(t); if (!d.students || !d.subjects) throw 0; st = d; st.store = st.store || {}; st.settings.cls = normCls(st.settings.cls); save(); renderAll(); toast('ស្តារបានជោគជ័យ'); } catch (x) { toast('ឯកសារមិនត្រឹមត្រូវ'); } });
     e.target.value = '';
   };
   $('#resetAll').onclick = () => { if (confirm('លុបទិន្នន័យទាំងអស់ក្នុង Local Storage?')) { localStorage.removeItem(KEY); load(); renderAll(); } };
@@ -535,6 +561,7 @@ async function push(silent) {
   if (!ui.api) return toast('សូមបញ្ចូល Web App URL');
   setStatus('កំពុងផ្ញើទៅ Google...');
   try {
+    stashClass();
     const res = await fetch(ui.api, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'save', data: st }) });
     const j = await res.json(); if (!j.ok) throw new Error(j.error);
     setStatus('បានផ្ញើទៅ Google ' + new Date().toLocaleTimeString());
@@ -557,6 +584,8 @@ async function pull() {
       const v = typeof st.settings[k] === 'string' ? st.settings[k].split(',').map(Number) : st.settings[k];
       st.settings[k] = (Array.isArray(v) && v.length === n && !v.some(isNaN)) ? v : df;
     });
+    if (d.store && typeof d.store === 'object' && Object.keys(d.store).length) st.store = d.store;
+    st.settings.cls = normCls(st.settings.cls);
     st.students = d.students.map(s => newStudent(Object.assign({}, s, { a1p: Number(s.a1p) || 0, a1u: Number(s.a1u) || 0, a2p: Number(s.a2p) || 0, a2u: Number(s.a2u) || 0, m1: num(s.m1), m2: num(s.m2), skill: num(s.skill), char: num(s.char), cond: (s.cond && s.cond.moral) ? s.cond : defCond() })));
     save(); renderAll(); toast('ទាញយកបានជោគជ័យ');
   } catch (e) { setStatus('ទាញយកមិនបាន'); toast('មានបញ្ហា ៖ ' + e.message); }
@@ -593,9 +622,120 @@ function applyQ(inp) {
 const applyAllQ = () => $$('input.q').forEach(applyQ);
 document.addEventListener('input', e => { if (e.target.classList && e.target.classList.contains('q')) applyQ(e.target); });
 
+/* ===== ថ្នាក់ (ជ្រើស) + ទាញឈ្មោះសិស្ស ===== */
+function stashClass() {
+  const k = normCls(st.settings.cls); if (!k) return;
+  st.store = st.store || {};
+  st.store[k] = { subjects: st.subjects, students: st.students, level: st.settings.level, teacher: st.settings.teacher };
+}
+function levelForClass(cls, prev) {
+  const g = gradeNum(cls);
+  if (g >= 7 && g <= 10) return String(g);
+  if (g === 11 || g === 12) return (prev && String(prev).startsWith(String(g))) ? prev : g + ' វិទ្យាសាស្ត្រ';
+  return '';
+}
+function switchClass(next) {
+  next = normCls(next);
+  const prev = normCls(st.settings.cls);
+  if (next === prev) return;
+  const carry = !prev && st.students.length > 0;      // ទិន្នន័យបញ្ចូលមុនជ្រើសថ្នាក់ → ចាត់ជារបស់ថ្នាក់នេះ
+  stashClass();
+  st.settings.cls = next;
+  const d = (st.store || {})[next];
+  if (d) {
+    st.subjects = d.subjects || []; st.students = (d.students || []).map(s => Object.assign(newStudent(), s));
+    st.settings.level = d.level || ''; st.settings.teacher = d.teacher !== undefined ? d.teacher : '';
+  } else if (!carry) {
+    st.students = []; st.subjects = []; st.settings.teacher = '';
+    const lv = levelForClass(next, st.settings.level);
+    if (lv) applyLevel(lv);
+    const g = gradeNum(next);
+    if (g === 11 || g === 12) toast('ថ្នាក់ទី ' + next + ' កំណត់ជា «វិទ្យាសាស្ត្រ» · បើជាសង្គម សូមប្តូរកម្រិតថ្នាក់ក្នុងការកំណត់');
+  }
+  ui.sel = null; save();
+}
+function rosterCache() { try { return JSON.parse(localStorage.getItem(ROSTER_KEY)) || null; } catch (e) { return null; } }
+function renderClassSelects() {
+  const cur = normCls(st.settings.cls), extra = ((rosterCache() || {}).classes || []).concat(Object.keys(st.store || {}));
+  const list = CLASS_LIST.concat(extra.filter(c => c && !CLASS_LIST.includes(c)), cur && !CLASS_LIST.includes(cur) && !extra.includes(cur) ? [cur] : []);
+  const html = '<option value="">— ជ្រើសរើសថ្នាក់ —</option>' + list.map(c => `<option value="${esc(c)}" ${c === cur ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  ['#clsSel', '#clsHdr'].forEach(s => { const el = $(s); if (el) el.innerHTML = html; });
+}
+async function onClassChange(v) {
+  if (!v) return;
+  switchClass(v); renderAll();
+  await syncRoster(false);
+}
+async function fetchSheetCSV(tab) {
+  const url = 'https://docs.google.com/spreadsheets/d/' + ROSTER_ID + '/gviz/tq?tqx=out:csv&headers=1&sheet=' + encodeURIComponent(tab);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const t = await res.text();
+  if (/^\s*</.test(t)) throw new Error('Google Sheet មិនទាន់ចែករំលែកជា «Anyone with the link – Viewer»');
+  return t;
+}
+const mapRow = r => ({ sid: String(r.sid == null ? '' : r.sid).trim(), name: String(r.name || '').trim(), sex: normSex(r.sex), dob: String(r.dob || '').trim().replace(/-/g, '/'), cls: normCls(r.cls) });
+async function fetchRoster() {
+  let err;
+  try {
+    const rows = parseCSV(await fetchSheetCSV(ROSTER_TAB)), h = rows[0] || [];
+    const ci = colOf(h, ['អត្តលេខ', 'id']), cn = colOf(h, ['ឈ្មោះសិស្ស', 'ឈ្មោះ', 'name']), cs = colOf(h, ['ភេទ', 'sex']), cd = colOf(h, ['ថ្ងៃខែឆ្នាំកំណើត', 'dob']), cc = colOf(h, ['ថ្នាក់', 'class']);
+    if (cn < 0 || cc < 0) throw new Error('រកមិនឃើញជួរ «ឈ្មោះសិស្ស» ឬ «ថ្នាក់» ក្នុង Sheet');
+    const out = rows.slice(1).filter(r => String(r[cn] || '').trim()).map(r => mapRow({ sid: ci >= 0 ? r[ci] : '', name: r[cn], sex: cs >= 0 ? r[cs] : '', dob: cd >= 0 ? r[cd] : '', cls: r[cc] }));
+    let classes = [];
+    try { classes = parseCSV(await fetchSheetCSV(CLASSES_TAB)).slice(1).map(r => normCls(r[0])).filter(Boolean); } catch (e) {}
+    return { rows: out, classes };
+  } catch (e) { err = e; }
+  if (ui.api) {
+    try {
+      const res = await fetch(ui.api + (ui.api.includes('?') ? '&' : '?') + 'action=roster'), j = await res.json();
+      if (!j.ok) throw new Error(j.error);
+      return { rows: j.rows.map(mapRow), classes: (j.classes || []).map(normCls) };
+    } catch (e2) { err = new Error(err.message + ' | Apps Script ៖ ' + e2.message); }
+  }
+  throw err;
+}
+function mergeRoster(cls, rows) {
+  const mine = rows.filter(r => r.cls === cls && r.name); let add = 0, upd = 0; const ordered = [];
+  mine.forEach(r => {
+    let ex = r.sid ? st.students.find(s => String(s.sid).trim() === r.sid) : st.students.find(s => !s.sid && s.name.replace(/\s+/g, '') === r.name.replace(/\s+/g, ''));
+    if (ex) { Object.assign(ex, { sid: r.sid, name: r.name, sex: r.sex, dob: r.dob }); upd++; }
+    else { ex = newStudent({ sid: r.sid, name: r.name, sex: r.sex, dob: r.dob }); st.students.push(ex); add++; }
+    ordered.push(ex);
+  });
+  const rest = st.students.filter(s => !ordered.includes(s));
+  st.students = ordered.concat(rest);
+  return { add, upd, extra: rest.length, total: mine.length };
+}
+let rosterBusy = false;
+async function syncRoster(manual) {
+  const cls = normCls(st.settings.cls);
+  if (!cls) return toast('សូមជ្រើសរើសថ្នាក់ជាមុនសិន');
+  if (rosterBusy) return; rosterBusy = true;
+  const msg = $('#rosterMsg'); if (msg) msg.textContent = 'កំពុងទាញឈ្មោះសិស្សថ្នាក់ ' + cls + ' ពី Google Sheet...';
+  setStatus('កំពុងទាញឈ្មោះសិស្ស...');
+  let data, offline = false;
+  try {
+    data = await fetchRoster();
+    try { localStorage.setItem(ROSTER_KEY, JSON.stringify({ at: Date.now(), rows: data.rows, classes: data.classes })); } catch (e) {}
+  } catch (e) {
+    const c = rosterCache();
+    if (c) { data = c; offline = true; }
+    else { rosterBusy = false; setStatus('ទាញឈ្មោះមិនបាន'); if (msg) msg.textContent = '⚠ ' + e.message; return toast('ទាញឈ្មោះសិស្សមិនបាន ៖ ' + e.message); }
+  }
+  if (cls !== normCls(st.settings.cls)) { rosterBusy = false; return; }   // ថ្នាក់ត្រូវបានប្តូរអំឡុងពេលរង់ចាំ
+  const r = mergeRoster(cls, data.rows);
+  save(); renderAll(); rosterBusy = false;
+  const t = (offline ? '(ប្រើទិន្នន័យចាស់ក្នុងម៉ាស៊ីន) ' : '') + 'ថ្នាក់ ' + cls + ' ៖ ' + r.total + ' នាក់ ក្នុង Sheet · បន្ថែមថ្មី ' + r.add + ' · ធ្វើបច្ចុប្បន្នភាព ' + r.upd + (r.extra ? ' · មិនមានក្នុង Sheet ' + r.extra + ' (រក្សាទុក)' : '');
+  setStatus('ទាញឈ្មោះសិស្សរួច ' + new Date().toLocaleTimeString());
+  const m2 = $('#rosterMsg'); if (m2) m2.textContent = t;
+  if (manual || r.add || offline) toast(t);
+  if (!r.total) toast('រកមិនឃើញសិស្សថ្នាក់ ' + cls + ' ក្នុង Google Sheet');
+}
+
 /* ===== Tabs ===== */
 function showTab(p) {
-  ui.tab = p;
+  ui.tab = p; renderClassSelects();
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
   $$('.panel').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
   if (p === 'set') renderSettings();
@@ -614,3 +754,4 @@ if (!st.settings.dateAutoV2) { if (!st.settings.place) st.settings.place = 'ក�
 bindSettings(); bindStudents(); bindSem(1); bindSem(2); bindScoreButtons(); bindSkill(); bindCards(); bindSync();
 $('#nav').addEventListener('click', e => { if (e.target.dataset.p) showTab(e.target.dataset.p); });
 renderAll();
+if (normCls(st.settings.cls) && !st.students.length) syncRoster(false);
